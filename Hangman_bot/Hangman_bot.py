@@ -4,7 +4,7 @@ from telebot import types
 import random
 import json
 
-bot = telebot.TeleBot("5201655115:AAFbPgpEaPMThZCUETrvHZiHjqqnAbx1MoI")
+bot = telebot.TeleBot("")
 
 ID = 0
 HP = 1
