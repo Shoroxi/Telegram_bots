@@ -97,10 +97,9 @@ def goto_menu(tg, chat_id, name_menu):
         return None
 
 
-m_main = Menu("Главное меню", buttons=["Развлечения","Аниме",'Игры','Wiki',"Рег",'дз','Помощь'])
+m_main = Menu("Главное меню", buttons=["Развлечения","Аниме",'Игры','Wiki','Помощь'])
 m_games = Menu("Игры", buttons=["Кости",'Выход'], parent=m_main, module="Games")
 m_game_dc = Menu("Кости", buttons=["Бросить кости",'Выход'], parent=m_games, module="Games")
-m_dz = Menu("ДЗ", buttons=["1",'2','3','4','Выход'], parent=m_main, module="DZ")
 m_fun = Menu("Развлечения", buttons=["Собака",'Лиса','Книга','Погода','Выход'], parent=m_main, module="fun")
 m_anime = Menu("Аниме", buttons=['Поиск аниме', 'Поиск манги', 'Pat','Nep','Выход'], parent=m_main, module="Anime")
 m_wiki = Menu("Wiki", buttons=['Поиск значения слова', 'Выход'], parent=m_main, module="Wikis")

@@ -2,15 +2,26 @@ import telebot
 import menus
 from menus import Menu
 
-import loadconfig
-tg = telebot.TeleBot(loadconfig.__telegramtoken__)
-tg_group_id = loadconfig.__tg_group_id__
-my_id = loadconfig.__my_id__
+import fun
+import Discord
+import Anime
+import Games
+import Wikis
+
+try:
+    from loadconfig import __telegramtoken__, __tg_group_id__, __my_id__
+except ImportError:
+    exit('set __telegramtoken__ + __tg_group_id__ + __my_id__')
+
+tg = telebot.TeleBot(__telegramtoken__)
+tg_group_id = __tg_group_id__
+my_id = __my_id__
 
 import logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 # logger = telebot.logger
 # logger.setLevel(logging.DEBUG)
+
 
 @tg.message_handler(commands=['start'])
 def command(message):
@@ -44,6 +55,7 @@ def get_text_messages(message):
         tg.send_message(chat_id, text="Мне жаль, я не понимаю вашу команду: " + ms_text)
         menus.goto_menu(tg, chat_id, "Главное меню")
 
+
 def goto_menu(chat_id, name_menu):
     if name_menu == "Выход" and Menu.cur_menu != None and Menu.cur_menu.parent != None:
         target_menu = Menu.getMenu(chat_id, Menu.cur_menu.parent.name)
@@ -61,5 +73,7 @@ def send_help(chat_id):
     tg.send_message(chat_id, "хпфу")
 
 # ============== Запуск🚀
+
+
 if __name__ == '__main__':
     tg.polling(none_stop=True, interval=0) # bot.infinity_polling()
