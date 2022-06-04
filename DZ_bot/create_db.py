@@ -15,13 +15,11 @@ class UserState(db.Entity):
     user_state = Optional(str, sql_default="''")
 
 
-class Registration(db.Entity):
+class File(db.Entity):
     user_id = Required(int)
     username = Required(str)
-    chosen_flight = Required(str)
-    sits = Required(int)
-    comment = Required(str)
-    phone_number = Required(str)
+    file_path = Required(str)
+    del_file = Optional(bool)
 
 
 async def create_user(user_id, username, user_state):
@@ -49,17 +47,15 @@ async def delete_user(user_id):
             UserState.get(user_id=int(user_id)).delete()
 
 
-async def register_user(data):
-    with db_session:
-        user_id, username, chosen_flight, sits, comment, phone_number = data
-        new_ticket = Registration(
-            user_id=user_id,
-            username=username,
-            chosen_flight=chosen_flight,
-            sits=sits,
-            comment=comment,
-            phone_number=phone_number,
-        )
+# async def register_user(data):
+#     with db_session:
+#         user_id, username, file_path, del_file = data
+#         file = File(
+#             user_id=user_id,
+#             username=username,
+#             file_path=file_path,
+#             del_file=del_file
+#         )
 
 
 db.generate_mapping(create_tables=True)

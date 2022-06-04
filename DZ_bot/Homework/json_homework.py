@@ -1,10 +1,12 @@
 import os
 import json
 
+
 class Object:
     def toJSON(self):
         return json.dumps(self, default=lambda o: o.__dict__,
             sort_keys=False, indent=4)
+
 
 me = Object()
 me.name = input("Введите имя\n")

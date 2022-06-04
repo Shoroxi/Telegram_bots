@@ -22,7 +22,7 @@ async def on_shutdown(*args):
 async def on_startup(*args):
     """Оповещение админа о запуске бота"""
     handlers.log.info('Бот запущен')
-    await bot.send_message(chat_id=__admin_id__, text='Бот запущен')
+    await bot.send_message(chat_id=__admin_id__, text='Бот запущен, нажми /start', reply_markup=types.ReplyKeyboardRemove())
 
 handlers.register_handlers(dp, handlers.handlers_config)
 

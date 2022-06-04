@@ -1,12 +1,6 @@
 from marshmallow import Schema, fields, validate, post_load, ValidationError
 import json
-import os
-import argparse
-from telebot import types
-import telebot
 
-
-# Пример использование аргументов также можно увидиеть в loadconfig -
 # parser = argparse.ArgumentParser()
 # parser.add_argument("example")
 # args = parser.parse_args()
@@ -15,13 +9,6 @@ import telebot
 #     print('Welcome')
 # else:
 #     print("!")
-
-# ---------------------------------
-save_path = os.getcwd() + r"\JSON\Save.json"
-print("\n" + save_path)
-
-# ---------------------------------
-# конструктор
 
 
 class User(object):
@@ -49,9 +36,6 @@ class UserSchema(Schema):
     def make(self, data, **kwargs):
         return User(**data)
 
-# ---------------------------------
-# Открываем файл настройек, загружаем в конструктор, валидация
-
 
 def Schema_load(file, action):
     with open(file, action) as f:
@@ -62,30 +46,5 @@ def Schema_load(file, action):
             print(f'Valid Data: {e.valid_data}')
         return data2
 
-
 # print("\n" + str(Schema_load("JSON/Te.json", "r")) + " - ЭТО НАСТРОЙКИ")
-#
 # print("\n" + str(Schema_load(save_path, "r")) + " - ЭТО СТАРЫЕ ДАННЫЕ\n")
-
-#
-# @dp.message_handler(commands=["bry"])
-# async def reg_last(message):
-#         chat_id = message.chat.id
-#         name = await db.get_uname()
-#         age = await db.get_age()
-#         user = User(name, age)  # Даем значения
-#         user_data = (user.toJSON())  # преобразовали в JSON, а его в dict
-#         # eval = str -> json
-#         user_schema = UserSchema().load(eval(user_data))
-#         user_dump = UserSchema().dump(user_schema)
-#
-#         # Пищем в файл
-#         with open(save_path, 'w') as outfile:
-#             json.dump(user_dump, outfile)
-#
-#         # Открываем
-#         with open(save_path) as json_file:
-#             users = json.load(json_file)
-#             print(users)
-#
-#         await bot.send_message(chat_id, f'Nice to meet you {name}\n Age: {str(age)}')

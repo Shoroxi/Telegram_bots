@@ -1,2 +1,5 @@
-DZ_bot/config/config.py
-Fun_bot/config/config.py
+DZ_bot/config/
+Fun_bot/config/
+
+.idea
+*.log

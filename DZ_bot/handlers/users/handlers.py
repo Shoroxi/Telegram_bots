@@ -1,25 +1,11 @@
-# from asyncpg import Connection, Record
-# from asyncpg.exceptions import UniqueViolationError
-
-import re
-
 from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import Command
 from aiogram.dispatcher.filters import Text
 
-from aiogram.utils import markdown as md
-from aiogram.types import ParseMode
-from random import sample
-from datetime import datetime, timedelta
-from generate_ticket import draw_ticket
-
-from DZ_bot.config.cities import CITIES_AND_FLIGHT_TIME as SFT
-from DZ_bot.states.states import Steps
+from DZ_bot.states.states import Steps, File
 
 from DZ_bot import create_db
 
-import random
 from DZ_bot.Homework.marshmallow_homework import User, UserSchema
 import os
 import json
@@ -36,7 +22,7 @@ def configure_logging(log):
     stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M'))
     stream_handler.setLevel(logging.INFO)
 
-    file_handler = logging.FileHandler('aviaticketbot_messages.log', encoding='utf8')
+    file_handler = logging.FileHandler('DZ_bot.log', encoding='utf8')
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s', datefmt='%d/%m/%Y %H:%M'))
     file_handler.setLevel(logging.INFO)
 
@@ -53,6 +39,7 @@ configure_logging(log)
 
 # =============== START|HELP|CANCEL ======================
 
+
 async def send_welcome(message: types.Message, state: FSMContext):
     """Ответ на команду /start"""
     current_state = await state.get_state()
@@ -60,14 +47,12 @@ async def send_welcome(message: types.Message, state: FSMContext):
         await state.finish()
         await create_db.delete_user(message.chat.id)
     log.info(f'{message.chat.first_name} подключился к боту. ID {message.chat.id}\n')
-    await message.reply(f'Привет {message.chat.first_name}! Я бот AirTicketLaggyBot.',
-                        reply_markup=types.ReplyKeyboardRemove())
-    await message.answer(f'Я создан для обработки заказов на авиарейсы.')
-    await message.answer(f'Доступные команды: /ticket, /help, /cancel')
+    await message.reply(f'Привет {message.chat.first_name}!', reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(f'Доступные команды: /reg, /save, /delete, /first_les, /help, /cancel')
 
 
 async def send_help(message: types.Message):
-    await message.answer(f'Я бот AirTicketLaggyBot. Доступные команды: /start, /ticket, /help, /cancel')
+    await message.answer(f'Доступные команды: /reg, /save, /delete, /first_les, /help, /cancel')
 
 
 async def cancel_command(message: types.Message, state: FSMContext):
@@ -80,320 +65,237 @@ async def cancel_command(message: types.Message, state: FSMContext):
     await message.answer('Отменено.', reply_markup=types.ReplyKeyboardRemove())
     await create_db.delete_user(message.chat.id)
 
-# =============== СЦЕНАРИЙ ======================
+# =============== File Lesson №1 ======================
+
+
+async def first_les(message: types.Message, state: FSMContext):
+    """Ответ на команду /first_les"""
+
+    await state.set_state(Steps.reg)
+    current_state = await state.get_state()
+    log.info('Cur state %r', current_state)
+
+    async with state.proxy() as data:
+        if data.get('name') == None:
+            await state.finish()
+            await message.answer('Зарегайся /reg', reply_markup=types.ReplyKeyboardRemove())
+            await create_db.delete_user(message.chat.id)
+            return
+        else:
+            log.debug(f'{data}')
+            log.info(f'Проверка домашки первого урока\n')
+            name = data["name"]
+            age = int(data["age"])
+            await message.answer(f'домашки первого урока', reply_markup=types.ReplyKeyboardRemove())
+            await message.answer(f'№1. Имя: {name}')
+            await message.answer(f'#2. Имя: {name}, Возраст: {age}')
+            await message.answer(f'#3. Спам: {name*5}')
+            await message.answer(f'#4. Какая-то шутка про Имя: {name}, Возраст: {age}')
+
+            # 6 ------------------------ 6
+            if age >= 18:
+                await message.answer(f"#5 Что ты здесь делаешь ты же старик")
+            elif age < 18:
+                await message.answer(f'#5 Ты еще мал, чтобы читать это')
+
+            msg = ""
+            msg += f"\n{name[2:-1]}\n"
+            msg += f"{name[::-1]}\n"
+            msg += f"{name[:3]}\n"
+            msg += f"{name[5:]}\n"
+            await message.answer(f'#6. Имя: {msg}')
+            # 7 ------------------------ 7
+            # Делаем Список
+            A = 1  # Срез
+            result = []
+            for i in range(0, len(str(age)), A):
+                result.append(int(str(age)[i: i + A]))
+            msg = "Лист : " + str(result)
+
+            # Перебираем значения листа -> плюсуем, множим
+            div = 1
+            sm = 0
+
+            for i in result:
+                div = div * i
+                sm = sm + i
+            msg += '\nСумма=' + str(sm) + '\nПроизведение =' + str(div)
+            await message.answer(f'#7. {msg}')
+
+            # 8 ------------------------ 8
+            msg = ""
+            msg += f"\n{name.upper()}\n"
+            msg += f"{name.lower()}\n"
+            msg += f"{name.capitalize()}\n" # or name.title()
+            U = name.capitalize()
+            msg += f"{U.swapcase()}\n"
+            await message.answer(f'#8. {msg}')
+
+            # 9 ------------------------ 9
+            while True:
+                try:
+                    if (age < 1) or (age > 150):
+                        await message.answer("Возраст введен неверно")
+                        raise ValueError
+                    elif not (name.isalpha()) and (name.isspace()):
+                        await message.answer("Имя введено неверно")
+                        raise ValueError
+                    else:
+                        await message.answer("#9. Тогда в безду списка его!\n")
+                        break
+                except ValueError as err:
+                    continue
+
+            # 10 ------------------------ 10
+            # math_z = int(input("\nСколько будет 2*2+2\n"))
+            # if math_z == 6:
+            #     tg.send_message(chat_id=message.chat.id, text="Мда, я ответа тоже не знаю")
+            # else:
+            #     tg.send_message(chat_id=message.chat.id, text="Дурачок, я тоже кстати")
+            # await message.answer(f'#10. Тут ничего нету, тк надо отдельно в сценарий добавлять')
+            # await state.finish()
+            # await create_db.delete_user(message.chat.id)
+            await state.set_state(Steps.math)
+            await message.answer(f'#10. Сколько будет 2*2+2')
+
+
+async def q_math(message: types.Message, state: FSMContext):
+    """Ответ на #10"""
+
+    await message.answer("Правильно")
+
+    # await state.finish()
+    await state.reset_state(with_data=False)
+
+
+async def q_math_invalid(message: types.Message):
+    """Не праавильно посчитал"""
+    await message.answer('Неправильно')
+
+
+# =============== СЦЕНАРИЙ РЕГИСТРИЦИИ ======================
+
 async def reg_start(message: types.Message, state: FSMContext):
     """Ответ на команду /reg"""
     current_state = await state.get_state()
     if current_state is not None:
+        log.info(f'Прочистим данные\n')
         await state.finish()
         await create_db.delete_user(message.chat.id)
-    log.debug('Начат сценарий')
-    await state.set_state(Steps.city_from)
+    log.debug('Начат сценарий регистрации')
+
+    # Ставим состояние
+    # Спрашиваем
+    # Суем в ДБ
+    await state.set_state(Steps.name)
     await message.answer('Введите имя', reply_markup=types.ReplyKeyboardRemove())
     await create_db.create_user(message.chat.id, message.chat.username, 'Имя')
 
 
+async def reg_name(message: types.Message, state: FSMContext):
+    """Имя пользователя введен корректно"""
+    # Суем в State
+    async with state.proxy() as data:
+        data['name'] = message.text
+        log.debug(f'{data}')
+
+    await state.set_state(Steps.age)
+    await message.answer('Введите свой возраст', reply_markup=types.ReplyKeyboardRemove())
+    await create_db.update_user(message.chat.id, 'Возраст')
 
 
+async def reg_age(message: types.Message, state: FSMContext):
+    """Возраст пользователя введен корректно"""
+    async with state.proxy() as data:
+        data['age'] = message.text
+        data['reg'] = True
+        await message.answer(f'Спасибо за регистрацию, {data["name"]}')
 
-# =============== CMD ======================
+        log.debug(f'{data}')
+        log.info(f'Имя: {data["name"]}')
+        log.info(f'Возраст: {data["age"]}')
+        log.info(f'Зареган: {data["reg"]}\n')
 
-
-class DBCommands:
-    # =============== DATABASE - Posteg ======================
-    pool: Connection = db
-    ADD_NEW_USER = "INSERT INTO users(chat_id, username, full_name) VALUES ($1, $2, $3) RETURNING id"
-
-    COUNT_USERS = "SELECT COUNT(*) FROM users"
-
-    GET_ID = "SELECT id FROM users WHERE chat_id = $1"
-    GET_UNAME = "SELECT uname FROM users WHERE chat_id = $1"
-    GET_AGE = "SELECT age FROM users WHERE chat_id = $1"
-
-    CHECK_BALANCE = "SELECT balance FROM users WHERE chat_id = $1"
-    CHECK_REGS = "SELECT regit FROM users WHERE chat_id = $1"
-
-    MARK_REGS = "UPDATE users SET regit=true WHERE chat_id = $1"
-    ADD_MONEY = "UPDATE users SET balance=balance+$1 WHERE chat_id = $2"
-    SET_AGE = "UPDATE users SET age=$1 WHERE chat_id = $2"
-    SET_UNAME = "UPDATE users SET uname=$1 WHERE chat_id = $2"
-
-    async def add_new_user(self):
-        user = types.User.get_current()
-
-        chat_id = user.id
-        username = user.username
-        full_name = user.full_name
-        args = chat_id, username, full_name
-
-        command = self.ADD_NEW_USER
-
-        try:
-            record_id = await self.pool.fetchval(command, *args)
-            return record_id
-        except UniqueViolationError:
-            pass
-
-    async def count_users(self):
-        record: Record = await self.pool.fetchval(self.COUNT_USERS)
-        return record
-
-    # =============== GET ======================
-    async def get_id(self):
-        command = self.GET_ID
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, user_id)
-
-    async def get_uname(self):
-        command = self.GET_UNAME
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, user_id)
-
-    async def get_age(self):
-        command = self.GET_AGE
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, user_id)
-
-    # =============== CHECK ======================
-    async def check_balance(self):
-        command = self.CHECK_BALANCE
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, user_id)
-
-    async def check_reg(self):
-        command = self.CHECK_REGS
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, user_id)
-
-    # =============== ADD ======================
-    async def add_money(self, money):
-        command = self.ADD_MONEY
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, money, user_id)
-
-    async def add_reg(self):
-        command = self.MARK_REGS
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, user_id)
-
-    async def set_age(self, age):
-        command = self.SET_AGE
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, age, user_id)
-
-    async def set_uname(self, uname):
-        command = self.SET_UNAME
-        user_id = types.User.get_current().id
-        return await self.pool.fetchval(command, uname, user_id)
-
-
-db = DBCommands()
-
-# =============== REGISTER ======================
-
-
-async def register_user(message: types.Message, state: FSMContext):
-    """Ответ на команду /start"""
-    current_state = await state.get_state()
-    if current_state is not None:
-        await state.finish()
-        # await models.delete_user(message.chat.id)
-    chat_id = message.from_user.id
-    id = await db.add_new_user()
-    count_users = await db.count_users()
-    reg = await db.check_reg()
-    text = ""
-    if not id:
-        id = await db.get_id()
-    else:
-        text += "Записал в базу! "
-
-    uname = await db.get_uname()
-    age = await db.get_age()
-    balance = await db.check_balance()
-    text += f"""
-Привет {uname}, тебе {age}
-Сейчас в базе {count_users} человек!
-
-Ваш баланс: {balance} монет.
-{reg}
-
-Добавить монет: /add_money
-
-"""
-
-    await bot.send_message(chat_id, text)
-
-
-@dp.message_handler(commands=["blank"])
-async def check_user_reg(message: types.Message):
-    chat_id = message.from_user.id
-
-    state = dp.current_state(chat=message.chat.id, user=message.from_user.id)
-    text = ""
-
-    data = await state.get_data()
-    answer1 = data.get("name")
-    answer2 = data.get("age")
-
-    reg = await db.check_reg()
-    if reg == True and answer1 != None and answer2 != None:
-
-        text += f"""
-            Ваше имя: {answer1}
-            Ваш возраст: {answer2}
-            """
-
-        await bot.send_message(chat_id, text)
-    else:
-        await enter_test(message)
-
-
-@dp.message_handler(commands=["add_money"])
-async def add_money(message: types.Message):
-    random_amount = random.randint(1, 100)
-    await db.add_money(random_amount)
-    balance = await db.check_balance()
-
-    text = f"""
-Вам было добавлено {random_amount} монет.
-Теперь ваш баланс: {balance}
-    """
-    await message.answer(text)
-
-
-# =============== TESTING ======================
-
-
-@dp.message_handler(Command("test"), state=None)
-async def enter_test(message: types.Message):
-    await message.answer("Вы начали тестирование.\n"
-                         "Вопрос №1. \n\n"
-                         "Ваше имя "
-                         "(бесцельно блуждаете по интернету, клацаете пультом телевизора, просто смотрите в потолок)?")
-
-    # Вариант 1 - с помощью функции сет
-    await Test.Q1.set()
-
-
-@dp.message_handler(state=Test.Q1)
-async def name(message: types.Message, state: FSMContext):
-    answer = message.text
-
-    # Ваирант 2 получения state
-    # state = dp.current_state(chat=message.chat.id, user=message.from_user.id)
-
-    # Вариант 2 - передаем как словарь
-    await state.update_data(
-        {"uname": answer}
-    )
-
-    await message.answer("Вопрос №2. \n\n"
-                         "Ваш возраст?")
-
-
-    await Test.next()
-
-
-@dp.message_handler(state=Test.Q2)
-async def age(message: types.Message, state: FSMContext):
-    # Достаем переменные
-    data = await state.get_data()
-    answer1 = data.get("uname") # name
-    answer2 = message.text # age
-
-    await state.update_data(
-        {"uname": answer1, "age": answer2}
-    )
-
-    await db.add_reg() # Уже зареган
-    await db.set_uname(str(answer1))
-    await db.set_age(int(answer2))
-    await message.answer("Спасибо за ваши ответы!")
+    # """Завершение сценария"""
     # await state.finish()
-    await state.reset_state(with_data=False)     # Вариант завершения 3 - без стирания данных в data
-
-# =============== File ======================
-save_path = r"C:/Users/mspox/Desktop/STD_TgBot-main/DZ_bot/Homework/JSON/Te.json"
-
-
-class FileDetector:
-    def toJSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=False, indent=4)
+    await state.reset_state(with_data=False)
+    # await create_db.delete_user(message.chat.id)
+    # await create_db.update_user(message.chat.id, 'State:param')
 
 
-FD = FileDetector()
+async def reg_age_invalid(message: types.Message):
+    """Количество мест выбрано некорректно"""
+    await message.answer('Возраст задан неверно')
+
+# =============== File Lesson №6.2 ======================
 
 
-@dp.message_handler(commands=["Save"])
-async def save_json(message: types.Message):
-        chat_id = message.chat.id
-        name = await db.get_uname()
-        age = await db.get_age()
-        user = User(name, age)  # Даем значения
+async def save_json(message: types.Message, state: FSMContext):
+    """Ответ на команду /save"""
+    log.debug('Начат сценарий сохранения файла')
+
+    save_path = os.getcwd() + r"\handlers\users\JSON\Save.json"
+    log.info(f"{save_path}")
+
+    async with state.proxy() as data:
+        user = User(data["name"], data["age"])  # Даем значения
         user_data = (user.toJSON())  # преобразовали в JSON, а его в dict
         # eval = str -> json
         user_schema = UserSchema().load(eval(user_data))
         user_dump = UserSchema().dump(user_schema)
 
-        # Пищем в файл
         with open(save_path, 'w') as outfile:
             json.dump(user_dump, outfile)
 
-        # Открываем
-        with open(save_path) as json_file:
-            users = json.load(json_file)
-            print(users)
+        await message.answer(f'Файл успешно сохранен! \nИмя: {data["name"]} \n Возраст: {data["age"]}')
 
-        FD.name = name
-
-        await bot.send_message(chat_id, f'Файл успешно сохранен! Имя: {name}\n Возраст: {str(age)}')
+# =============== File Lesson №6.1 ======================
 
 
-@dp.message_handler(commands=["exist"], state=None)
-async def Qfile_path(message: types.Message):
-
-    await message.answer('Введи Путь к файлу:\n')
-    await File.File_Ex.set()
-
-
-@dp.message_handler(state=File.File_Ex)
-async def file_path(message: types.Message, state: FSMContext):
-    file = message.text
-    print(file)
-    FD.filepath = file
-    if os.path.exists(file):
-        await state.update_data(
-            {"file": file}
-        )
-        print(file)
-        await File.QDel.set()
-    else:
-        await bot.send_message(message.chat.id, "Не нашел, отрубаю сценарий")
+async def del_file_start(message: types.Message, state: FSMContext):
+    """Ответ на команду /delete"""
+    current_state = await state.get_state()
+    if current_state is not None:
         await state.finish()
+        await create_db.delete_user(message.chat.id)
+    log.debug('Начат сценарий удаления файла')
+
+    await state.set_state(File.file_path)
+    await message.answer('Введи Путь к файлу:\n', reply_markup=types.ReplyKeyboardRemove())
+    await create_db.create_user(message.chat.id, message.chat.username, 'Путь к файлу')
 
 
-@dp.message_handler(state=File.QDel)
-async def QDelff(message: types.Message):
-    await message.answer("Удалить файл?\n")
-    await File.Delete.set()
+async def file_path(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['file_path'] = message.text
+        if os.path.exists(data['file_path']):
+            keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            buttons = ["Да", "Нет"]
+            keyboard.add(*buttons)
+
+            await message.answer("Удалить файл?\n", reply_markup=keyboard)
+            await state.set_state(File.del_file)
+            await create_db.update_user(message.chat.id, 'State:param')
+        else:
+            await message.answer("Не нашел, отрубаю сценарий", reply_markup=types.ReplyKeyboardRemove())
+            await state.finish()
 
 
-@dp.message_handler(state=File.Delete)
-async def delete(message: types.Message, state: FSMContext):
-    answer = message.text
-    data = await state.get_data()
-    file = data.get("file")
-    if answer == "да":
-        os.remove(file)
-        FD.deleted = "Yes"
-        await bot.send_message(message.chat.id, "Удалил")
+async def q_del(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['delete_answer'] = message.text
+        log.debug(f'{data}')
+        if data['delete_answer'] == "Да":
+            os.remove(data['file_path'])
+            await message.answer(f'Файл успешно удален! \nПуть к файлу: {data["file_path"]}', reply_markup=types.ReplyKeyboardRemove())
+            await state.finish()
+        elif data['delete_answer'] == "Нет":
+            await message.answer(f'Ладно, отрубаю сценарий! \nПуть к файлу: {data["file_path"]}', reply_markup=types.ReplyKeyboardRemove())
+            await state.finish()
+        else:
+            await message.answer("Не понял", reply_markup=types.ReplyKeyboardRemove())
 
-    else:
-        FD.deleted = "NO"
-        await bot.send_message(message.chat.id, "Как хочешь")
-
-    await state.finish()
+# =============== register_handlers ======================
 
 
 def register_handlers(_dp, config):
@@ -409,6 +311,7 @@ def register_handlers(_dp, config):
     for handler_info in config['state_handlers']:
         _dp.register_message_handler(handler_info[0], handler_info[1], state=handler_info[2])
 
+
 handlers_config = {
 
     'command_handlers': (
@@ -416,6 +319,12 @@ handlers_config = {
         (send_help, 'help', '*', Text(equals='/help', ignore_case=True)),
         (cancel_command, 'cancel', '*', Text(equals='/cancel', ignore_case=True)),
         (reg_start, 'reg', '*', Text(equals='/reg', ignore_case=True)),
+        (save_json, 'save', '*', Text(equals='/save', ignore_case=True)),
+        (del_file_start, 'delete', '*', Text(equals='/delete', ignore_case=True)),
+
+        (first_les, 'first_les', '*', Text(equals='/first_les', ignore_case=True)),
+
+
     ),
 
     'communicate_handlers': (
@@ -423,130 +332,13 @@ handlers_config = {
     ),
 
     'state_handlers': [
-        (name, lambda message: message.text.title() in SFT.keys(), Steps.city_from),
+        (reg_name, lambda message: message.text, Steps.name),
+        (reg_age, lambda message: all([message.text.isdigit(), message.text in [str(x) for x in range(1, 100)]]), Steps.age),
+        (reg_age_invalid, lambda message: not all([message.text.isdigit(), message.text in [str(x) for x in range(1, 100)]]), Steps.age),
+        (q_math_invalid, lambda message: message.text != "6", Steps.math),
+        (q_math, lambda message: message.text == "6", Steps.math),
 
+        (file_path, lambda message: message.text, File.file_path),
+        (q_del, lambda message: message.text, File.del_file),
     ]
 }
-
-
-# =============== 1 HOMEWORK ======================
-
-
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first (message: types.Message, state: FSMContext):
-#     await message.answer("Привет, как звать")
-#     name = message.text
-#     await state.update_data(
-#         {"name": name}
-#     )
-#     data = await state.get_data()
-#     print(data)
-#
-# # @dp.message_handler(commands=["1"], state=DZ.Show)
-# # async def show (message: types.Message, state: FSMContext):
-#
-#
-# @dp.message_handler(commands=["1"], state=DZ.T2)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "2":
-#         await message.answer("Сколько вам лет\n")
-#         tg.send_message(chat_id=message.chat.id, text=str(age))
-
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "3":
-#         name = input('Введите ваше имя\n')
-#         spam = name * 5
-#         tg.send_message(chat_id=message.chat.id, text=spam)
-#
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "4":
-#         name = input('Введите ваше имя\n')
-#         age = int(input("Сколько вам лет\n"))
-#         tg.send_message(chat_id=message.chat.id, text=spam)
-#
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "5":
-#         age = int(input("Сколько вам лет\n"))
-#         if age >= 18:
-#             tg.send_message(chat_id=message.chat.id, text="Что ты здесь делаешь ты же старик\n")
-#         elif age < 18:
-#             tg.send_message(chat_id=message.chat.id, text='Ты еще мал, чтобы читать это\n')
-#
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "6":
-#         name = input('Введите ваше имя\n')
-#         msg = ""
-#         msg += (name[2:-1])
-#         msg += (name[::-1])
-#         msg += (name[:3])
-#         msg += (name[5:])
-#         tg.send_message(chat_id=message.chat.id, text=msg)
-#
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "7":
-#         # 7
-#         age = int(input("Сколько вам лет\n"))
-#         # Делаем Список
-#         A = 1  # Срез
-#         result = []
-#         for i in range(0, len(str(age)), A):
-#             result.append(int(str(age)[i: i + A]))
-#         tg.send_message(chat_id=message.chat.id, text="\nЛист : " + str(result))
-#
-#         # Перебираем значения листа -> плюсуем, множим
-#         div = 1
-#         sm = 0
-#
-#         for i in result:
-#             div = div * i
-#             sm = sm + i
-#         msg = ('\nСумма=' + str(sm) + '\nПроизведение =' + str(div))
-#         tg.send_message(chat_id=message.chat.id, text=msg)
-#
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "8":
-#         # 8
-#         tg.send_message(chat_id=message.chat.id, text='Введите ваше имя\n')
-#         print(name.upper())
-#         print(name.lower())
-#         print(name.capitalize())  # or name.title()
-#         U = name.capitalize()
-#         print(U.swapcase())
-#         tg.send_message(chat_id=message.chat.id, text=spam)
-#
-# @dp.message_handler(commands=["1"], state=DZ.T1)
-# async def first(message: types.Message, state: FSMContext):
-#     elif ms_text == "9":
-#         # 9
-#         while True:
-#             try:
-#                 name = input('Введите ваше имя\n')
-#                 age = int(input("Сколько вам лет\n"))
-#
-#                 if (age < 1) or (age > 150):
-#                     tg.send_message(chat_id=message.chat.id, text="ГОДА")
-#                     raise ValueError
-#                 elif not (name.isalpha()) and (name.isspace()):
-#                     tg.send_message(chat_id=message.chat.id, text="ИМЯ")
-#                     raise ValueError
-#                 else:
-#                     tg.send_message(chat_id=message.chat.id, text="Тогда в безду списка его!\n")
-#                     break
-#             except ValueError as err:
-#                 continue
-#
-#     elif ms_text == "10":
-#         # 10
-#         math_z = int(input("\nСколько будет 2*2+2\n"))
-#         if math_z == 6:
-#             tg.send_message(chat_id=message.chat.id, text="Мда, я ответа тоже не знаю")
-#         else:
-#             tg.send_message(chat_id=message.chat.id, text="Дурачок, я тоже кстати")
-#
-#
