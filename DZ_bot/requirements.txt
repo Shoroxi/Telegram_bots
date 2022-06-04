@@ -1,0 +1,12 @@
+aiogram>=2.19
+aiohttp==3.8.1
+async-timeout==4.0.2
+multidict==6.0.2
+packaging==21.3
+Pillow>=9.0.0
+pony==0.7.16
+psycopg2==2.9.3
+py==1.11.0
+requests==2.27.1
+urllib3==1.26.9
+yarl==1.7.2

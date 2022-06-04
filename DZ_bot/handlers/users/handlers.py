@@ -1,23 +1,33 @@
-from asyncpg import Connection, Record
-from asyncpg.exceptions import UniqueViolationError
+# from asyncpg import Connection, Record
+# from asyncpg.exceptions import UniqueViolationError
+
+import re
 
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Command
+from aiogram.dispatcher.filters import Text
 
-from DZ_bot.loader import bot, dp, db
-from DZ_bot.states.test import Test, File, DZ
+from aiogram.utils import markdown as md
+from aiogram.types import ParseMode
+from random import sample
+from datetime import datetime, timedelta
+from generate_ticket import draw_ticket
+
+from DZ_bot.config.cities import CITIES_AND_FLIGHT_TIME as SFT
+from DZ_bot.states.states import Steps
+
+from DZ_bot import create_db
 
 import random
 from DZ_bot.Homework.marshmallow_homework import User, UserSchema
 import os
 import json
 
-import asyncio
 
 # =============== LOGGING ======================
 import logging
-log = logging.getLogger('avia_ticket_bot')
+log = logging.getLogger('DZ_bot')
 
 
 def configure_logging(log):
@@ -40,6 +50,51 @@ def configure_logging(log):
 
 
 configure_logging(log)
+
+# =============== START|HELP|CANCEL ======================
+
+async def send_welcome(message: types.Message, state: FSMContext):
+    """Ответ на команду /start"""
+    current_state = await state.get_state()
+    if current_state is not None:
+        await state.finish()
+        await create_db.delete_user(message.chat.id)
+    log.info(f'{message.chat.first_name} подключился к боту. ID {message.chat.id}\n')
+    await message.reply(f'Привет {message.chat.first_name}! Я бот AirTicketLaggyBot.',
+                        reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(f'Я создан для обработки заказов на авиарейсы.')
+    await message.answer(f'Доступные команды: /ticket, /help, /cancel')
+
+
+async def send_help(message: types.Message):
+    await message.answer(f'Я бот AirTicketLaggyBot. Доступные команды: /start, /ticket, /help, /cancel')
+
+
+async def cancel_command(message: types.Message, state: FSMContext):
+    """Ответ на команду /cancel"""
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    log.debug('Отмена состояний %r', current_state)
+    await state.finish()
+    await message.answer('Отменено.', reply_markup=types.ReplyKeyboardRemove())
+    await create_db.delete_user(message.chat.id)
+
+# =============== СЦЕНАРИЙ ======================
+async def reg_start(message: types.Message, state: FSMContext):
+    """Ответ на команду /reg"""
+    current_state = await state.get_state()
+    if current_state is not None:
+        await state.finish()
+        await create_db.delete_user(message.chat.id)
+    log.debug('Начат сценарий')
+    await state.set_state(Steps.city_from)
+    await message.answer('Введите имя', reply_markup=types.ReplyKeyboardRemove())
+    await create_db.create_user(message.chat.id, message.chat.username, 'Имя')
+
+
+
+
 
 # =============== CMD ======================
 
@@ -135,7 +190,6 @@ class DBCommands:
 db = DBCommands()
 
 # =============== REGISTER ======================
-
 
 
 async def register_user(message: types.Message, state: FSMContext):
@@ -361,7 +415,7 @@ handlers_config = {
         (send_welcome, 'start', '*', Text(equals='/start', ignore_case=True)),
         (send_help, 'help', '*', Text(equals='/help', ignore_case=True)),
         (cancel_command, 'cancel', '*', Text(equals='/cancel', ignore_case=True)),
-        (ticket_start, 'ticket', '*', Text(equals='/ticket', ignore_case=True)),
+        (reg_start, 'reg', '*', Text(equals='/reg', ignore_case=True)),
     ),
 
     'communicate_handlers': (
@@ -369,24 +423,8 @@ handlers_config = {
     ),
 
     'state_handlers': [
-        (ticket_from_invalid, lambda message: message.text.title() not in SFT.keys(), Steps.city_from),
-        (ticket_from, lambda message: message.text.title() in SFT.keys(), Steps.city_from),
-        (ticket_to_invalid, lambda message: message.text.title() not in SFT.keys(), Steps.city_to),
-        (ticket_to, lambda message: message.text.title() in SFT.keys(), Steps.city_to),
-        (ticket_date_invalid, lambda message: not _ticket_date_check(message), Steps.flight_date),
-        (ticket_date, lambda message: _ticket_date_check(message), Steps.flight_date),
-        (ticket_choose_flight_invalid, lambda message: not all([message.text.isdigit(), message.text in [str(x) for x in range(1, 6)]]), Steps.flight_choice),
-        (ticket_choose_flight, lambda message: all([message.text.isdigit(), message.text in [str(x) for x in range(1, 6)]]), Steps.flight_choice),
-        (ticket_choose_sits_invalid, lambda message: not all([message.text.isdigit(), message.text in [str(x) for x in range(1, 6)]]), Steps.sits_number),
-        (ticket_choose_sits, lambda message: all([message.text.isdigit(), message.text in [str(x) for x in range(1, 6)]]), Steps.sits_number),
-        (ticket_comment_invalid, lambda message: not message.text, Steps.comment),
-        (ticket_comment, lambda message: message.text, Steps.comment),
-        (ticket_correct_data_invalid, lambda message: message.text.title() != 'Да', Steps.validate_data),
-        (ticket_correct_data, lambda message: message.text.title() == 'Да', Steps.validate_data),
-        (ticket_phone_number_invalid,
-         lambda message: not re.match(r'^(\d{3})\D?(\d{3})\D?(\d{4})\D?(\d*)$', message.text), Steps.phone_number),
-        (ticket_phone_number,
-         lambda message: re.match(r'^(\d{3})\D?(\d{3})\D?(\d{4})\D?(\d*)$', message.text), Steps.phone_number),
+        (name, lambda message: message.text.title() in SFT.keys(), Steps.city_from),
+
     ]
 }
 

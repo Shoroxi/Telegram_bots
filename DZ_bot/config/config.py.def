@@ -1,0 +1,13 @@
+__telegramtoken__ = ""
+__admin_id__ = 818019160 #@Shorox
+
+__bot_id__ = ''
+
+__db_config__ = dict(
+    provider='postgres',
+    user='',
+    password='',
+    host='',
+    port='5432',
+    database='',
+)
