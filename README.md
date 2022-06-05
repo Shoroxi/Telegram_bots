@@ -11,12 +11,12 @@
 -  🤡 Поиск Аниме, Манги по названию | API 
 -  💻 Discord | Отсылает в группу сообщения из каналов сервера | ***Отдельный Discord бот***
 
-## DZ_bot_STD | aiogram 2.20 | http://t.me/Hangman_STD_bot
+## DZ_bot_STD | aiogram 2.20 | http://t.me/STD_G_bot
 ### Функции:
 -  📊 Heroku PostegreSQL
 -  🎬 FSM - state machine | Сценарии
 -  🧊 Marshmallow | Валидация | *не интегрировал в БД*
 
-## Hangman_bot | Inline Game bot | pyTelegramBotAPI 4.4.0 | http://t.me/STD_G_bot
+## Hangman_bot | Inline Game bot | pyTelegramBotAPI 4.4.0 | http://t.me/Hangman_STD_bot
 ### Функции:
 -  Висилица
